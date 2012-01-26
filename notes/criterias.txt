@@ -1,0 +1,30 @@
+- products out of stock "where decimal.Parse(product.Attribute("QuantityForSale").Value) < 1"
+- products out of stock and not in stock within the next week:
+	where decimal.Parse(product.Attribute("QuantityForSale").Value) < 1
+                                                                    && !(decimal.Parse(product.Attribute("QuantityForSale1").Value) > 0m
+                                                                            //due in within 7 days
+                                                                            && DateTime.Parse(product.Attribute("AvailableDate1").Value) <= DateTime.Now.AddDays(7)) 
+                                                                            
+3. remove cancelled sales lines:
+        salesDoc.Descendants("row").Where(r => r.Attribute("ItemStatus").Value == "CD").Remove();
+        
+4. remove products not to be counted:
+string[] productsToRemove = (from product in productsDoc.Descendants("row")
+                                   where (product.Attribute("SPART").Value == "90" || product.Attribute("SPART").Value == "91" || product.Attribute("SPART").Value == "92") // demo products
+                                            || ((store.StoreId == 325) && decimal.Parse(product.Attribute("ZCPRICE").Value) < 1000m) // itegra products less than 1000kr
+                                            || ((store.StoreId == 311 || store.StoreId == 318) && decimal.Parse(product.Attribute("ZCPRICE").Value) < 500m) // norek.no or norek.se less than 500
+                                            || (product.Attribute("VMSTA").Value == "03") // End of life products
+                                            
+5. remove specific customer groups
+salesDoc.Descendants("row").Where(r => r.Attribute("KDGRP").Value == "10" || //Public Sector
+                                                ((store.StoreType == "B2C") 
+6. // remove the sales of out of stock and not coming in products and sales that are not within the current month
+            salesForMonthHotlist.Descendants("row").Where(r => productsOutOfStockAndNotComingIn.Contains(r.Attribute("SKU").Value)
+                || (int.Parse(r.Attribute("Year").Value) != thisYear || int.Parse(r.Attribute("Month").Value) != thisMonth)
+                ).Remove();                                               && (r.Attribute("KDGRP").Value == "20" || r.Attribute("KDGRP").Value == "30"))) // customer-facing store and business customer
+                                                .Remove();                                           
+                                                
+7. // remove the sales of out of stock products and sales that are not within the current week
+            salesForWeekHotlist.Descendants("row").Where(r => productsOutOfStock.Contains(r.Attribute("SKU").Value)
+                || GetWeekInYear(int.Parse(r.Attribute("Year").Value), int.Parse(r.Attribute("Month").Value), int.Parse(r.Attribute("Day").Value)) != currentWeek
+                ).Remove();                                                

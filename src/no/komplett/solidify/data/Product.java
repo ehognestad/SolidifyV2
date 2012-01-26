@@ -125,7 +125,7 @@ public class Product {
 		this.browseNodeId = browseNodeId;
 	}
 
-	public Date getAvailableDate() {
+	public Date getExpiresDate() {
 		return availableDate;
 	}
 
