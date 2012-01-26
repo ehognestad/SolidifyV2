@@ -1,4 +1,6 @@
-package no.komplett.solidify.rules;
+package no.komplett.solidify.specification;
+
+
 public abstract class AbstractSpecification implements Specification {
 
   public abstract boolean isSatisfiedBy(Object o);

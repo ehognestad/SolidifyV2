@@ -1,4 +1,4 @@
-package no.komplett.solidify.rules;
+package no.komplett.solidify.specification;
 
 import no.komplett.solidify.data.SalesData;
 

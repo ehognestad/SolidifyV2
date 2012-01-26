@@ -1,19 +1,19 @@
-package no.komplett.solidify.rules;
+package no.komplett.solidify.specification;
 
 import no.komplett.solidify.data.Product;
 
-public class ProductFromCompanySpecification extends AbstractSpecification {
+public class ProductEndOfLifeSpecification extends AbstractSpecification {
   
-	private int storeId;
+	private String vmstaCode;
 
-  public ProductFromCompanySpecification(int storeId) {
-    this.storeId = storeId;
+  public ProductEndOfLifeSpecification(String vmstaCode) {
+    this.vmstaCode = vmstaCode;
   }
 
   public boolean isSatisfiedBy(Object o) {
     if (o instanceof Product) {
     	Product product = (Product) o;
-      return product.getStoreId() == storeId;
+      return product.getVmsta().equalsIgnoreCase(vmstaCode);
     } else {
       throw new ClassCastException("Specification only for Product - received: " + o.getClass().getCanonicalName());
     }

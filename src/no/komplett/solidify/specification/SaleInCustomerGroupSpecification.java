@@ -1,12 +1,12 @@
-package no.komplett.solidify.rules;
+package no.komplett.solidify.specification;
 
 import no.komplett.solidify.data.SalesData;
 
-public class SaleInCustomerGroup extends AbstractSpecification {
+public class SaleInCustomerGroupSpecification extends AbstractSpecification {
   
 	private int customerGroupId;
 
-  public SaleInCustomerGroup(int customerGroupId) {
+  public SaleInCustomerGroupSpecification(int customerGroupId) {
     this.customerGroupId = customerGroupId;
   }
 

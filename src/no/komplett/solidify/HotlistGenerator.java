@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -37,15 +40,21 @@ public class HotlistGenerator {
 	 */
 	
 	public static void main(String[] args) throws ParseException{
-		
-		
-		
-		//Getting categories
-		//<row StoreID="312" KDGRP="40" SKU="645227" Day="6" Month="8" Year="2011" Count="1" ItemStatus="CF" />
 		try {
 			List<Category> categories = getCategories();
 			List<Product> products = getProducts();
-			List<SalesData> salesDatas = getSales();
+			
+			ProductService productService = new ProductServiceImplementation(products);
+			Collection<Integer> productsNotInStock = productService.getProductsNotInStock();
+			System.out.println("products not in stock: " + productsNotInStock.size());
+			
+			Collection<Integer> productsNotInStockAndNotInStockWithinNextWeek = productService.getProductsNotInStockAndNotInStockWithinTimeFrame(getNextWeek());
+			System.out.println("products not in stock and not in stock next week: " + productsNotInStockAndNotInStockWithinNextWeek.size());
+			
+			Collection<Integer> productsToRemove = productService.getProductsToRemove();
+			System.out.println("productsToRemove: " + productsToRemove.size());
+			
+//			List<SalesData> salesDatas = getSales();
 		} catch (JDOMException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -55,6 +64,14 @@ public class HotlistGenerator {
 		}
 	}
 
+	private static Date getNextWeek(){
+		Calendar calendar = Calendar.getInstance();
+		calendar.add(Calendar.YEAR, -2);
+		calendar.add(Calendar.DAY_OF_MONTH, 7);
+		
+		return calendar.getTime();
+	}
+	
 	private static List<SalesData> getSales() throws JDOMException, IOException,
 			DataConversionException {
 		Document salesDataDoc = XmlParser.getDocument(DATA_PATH + "SalesData.xml");
@@ -162,8 +179,6 @@ public class HotlistGenerator {
 					.hasNext();) {
 				Attribute attribute = (Attribute) iterator2.next();
 				
-				System.out.println("att: " + attribute);
-				
 				if(attribute.getName().equalsIgnoreCase("storeid")){
 					category.setStoreId(attribute.getIntValue());
 				} else if(attribute.getName().equalsIgnoreCase("catalogid")){
@@ -177,7 +192,6 @@ public class HotlistGenerator {
 				} else if(attribute.getName().equalsIgnoreCase("url")){
 					category.setUrl(attribute.getValue());
 				}
-				
 			}
 			
 			categories.add(category);

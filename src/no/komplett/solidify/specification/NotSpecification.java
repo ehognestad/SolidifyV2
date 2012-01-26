@@ -1,4 +1,6 @@
-package no.komplett.solidify.rules;
+package no.komplett.solidify.specification;
+
+
 public class NotSpecification extends AbstractSpecification {
 
   private Specification spec1;

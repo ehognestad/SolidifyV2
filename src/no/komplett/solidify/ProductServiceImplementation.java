@@ -1,17 +1,19 @@
 package no.komplett.solidify;
 
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import no.komplett.solidify.data.Product;
-import no.komplett.solidify.rules.InStockSpecification;
-import no.komplett.solidify.rules.IsDemoProductSpecification;
-import no.komplett.solidify.rules.ProductFromCompanySpecification;
-import no.komplett.solidify.rules.ProductsExpiringSpecification;
-import no.komplett.solidify.rules.Specification;
+import no.komplett.solidify.specification.IsDemoProductSpecification;
+import no.komplett.solidify.specification.NotInStockSpecification;
+import no.komplett.solidify.specification.ProductEndOfLifeSpecification;
+import no.komplett.solidify.specification.ProductFromCompanySpecification;
+import no.komplett.solidify.specification.ProductsExpiringSpecification;
+import no.komplett.solidify.specification.Specification;
 
 public class ProductServiceImplementation implements ProductService{
 	
@@ -21,56 +23,28 @@ public class ProductServiceImplementation implements ProductService{
 		this.products = products;
 	}
 	
-	@Override
-	public Collection<Product> getProductsInStockNotExpiringWithinWeek() {
-		Collection<Product> productsToKeep = new HashSet<Product>();
-		
-		Calendar calendar = Calendar.getInstance();
-		calendar.add(Calendar.DAY_OF_MONTH, 7);
-		Date oneWeekAhead = calendar.getTime();
-		
-		final Specification inStockSpecification = new InStockSpecification(1);
-		final Specification inStockWithinNextWeek = new ProductsExpiringSpecification(oneWeekAhead);
-		final Specification demoProducsSpecification = new IsDemoProductSpecification(getDemoProductTypeIds());
-		final Specification productFromCompanySpecification = new ProductFromCompanySpecification(325);
-		
-		final Specification productsInStockAndNotExpiringWithingWeek = inStockSpecification.and(inStockWithinNextWeek).not(demoProducsSpecification);
-		
-		for(Product product : products){
-			if(productsInStockAndNotExpiringWithingWeek.isSatisfiedBy(product)){
-				productsToKeep.add(product);
-			}
-		}
-		
-		return productsToKeep;
+	public Collection<Integer> getProductsNotInStock() {
+		final Specification inStockSpecification = new NotInStockSpecification(1);
+		return filterProducts(inStockSpecification);
 	}
 	
-	public Collection<Product> getProductsInStock() {
-		Collection<Product> productsToKeep = new HashSet<Product>();
+	public Collection<Integer> getProductsNotInStockAndNotInStockWithinTimeFrame(Date notInStockBeforeDate) {
+		System.out.println("notInStockBeforeDate: " + notInStockBeforeDate);
 		
-		final Specification inStockSpecification = new InStockSpecification(1);
+		final Specification outOfStockSpecification = new NotInStockSpecification(1);
+		final Specification notInStockWithinNextWeek = new ProductsExpiringSpecification(notInStockBeforeDate);
+		final Specification outOfStockAndNotInStockWithinNextWeekSpecification = outOfStockSpecification.and(notInStockWithinNextWeek);
 		
-		for(Product product : products){
-			if(inStockSpecification.isSatisfiedBy(product)){
-				productsToKeep.add(product);
-			}
-		}
-		
-		return productsToKeep;
+		return filterProducts(outOfStockAndNotInStockWithinNextWeekSpecification);
 	}
 	
-	public Collection<Product> getNonDemoProducts() {
-		Collection<Product> productsToKeep = new HashSet<Product>();
+	public Collection<Integer> getProductsToRemove() {
+		final Specification demoProductsSpecification = new IsDemoProductSpecification(getDemoProductTypeIds());
+		final Specification companySpecification = new ProductFromCompanySpecification(getCompanyMinimumPriceMap());
+		final Specification productEndOfLifeSpecification = new ProductEndOfLifeSpecification("03");
+		final Specification productsToRemoveSpecification = demoProductsSpecification.or(companySpecification).or(productEndOfLifeSpecification);
 		
-		final Specification demoProducsSpecification = new IsDemoProductSpecification(getDemoProductTypeIds());
-		
-		for(Product product : products){
-			if(!demoProducsSpecification.isSatisfiedBy(product)){
-				productsToKeep.add(product);
-			}
-		}
-		
-		return productsToKeep;
+		return filterProducts(productsToRemoveSpecification);
 	}
 	
 	private Set<Integer> getDemoProductTypeIds(){
@@ -80,5 +54,26 @@ public class ProductServiceImplementation implements ProductService{
 		demoProductTypeIds.add(92);
 		
 		return demoProductTypeIds;
+	}
+	
+	private Map<Integer, Double> getCompanyMinimumPriceMap(){
+		Map<Integer, Double> companyMinPriceMap = new HashMap<Integer, Double>();
+		companyMinPriceMap.put(325,  1000.00);
+		companyMinPriceMap.put(311, 500.00);
+		companyMinPriceMap.put(318, 500.00);
+		
+		return companyMinPriceMap;
+				
+	}
+	
+	private Collection<Integer> filterProducts(final Specification specification) {
+		Collection<Integer> productIds = new HashSet<Integer>();
+		for(Product product : products){
+			if(specification.isSatisfiedBy(product)){
+				productIds.add(product.getId());
+			}
+		}
+		
+		return productIds;
 	}
 }
