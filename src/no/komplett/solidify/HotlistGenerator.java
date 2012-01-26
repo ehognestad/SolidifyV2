@@ -54,7 +54,21 @@ public class HotlistGenerator {
 			Collection<Integer> productsToRemove = productService.getProductsToRemove();
 			System.out.println("productsToRemove: " + productsToRemove.size());
 			
-//			List<SalesData> salesDatas = getSales();
+			List<SalesData> salesDatas = getSales();
+			System.out.println("sales size: " + salesDatas.size());
+			
+			List<SalesData> salesToRemove = new ArrayList<SalesData>();
+			for (Iterator<SalesData> iterator = salesDatas.iterator(); iterator.hasNext();) {
+				SalesData salesData = iterator.next();
+				
+				//Adding sale to remove if productid is contained in the products to remove list
+				if(productsToRemove.contains(salesData.getSku())) salesToRemove.add(salesData);
+				
+			}
+			
+			salesDatas.removeAll(salesToRemove);
+			
+			System.out.println("edited sales size: " + salesDatas.size());
 		} catch (JDOMException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
