@@ -3,7 +3,7 @@ package no.komplett.solidify.test;
 import java.io.IOException;
 
 import no.komplett.solidify.HotlistGenerator;
-import no.komplett.solidify.XmlParser;
+import no.komplett.solidify.service.DataHelper;
 
 import org.jdom.Document;
 import org.jdom.JDOMException;
@@ -16,18 +16,14 @@ public class HotListGenerationTests {
 	public static void main(String[] args){
 		try {
 			testHotlistResults();
-		} catch (JDOMException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
 	private static void testHotlistResults() throws JDOMException, IOException{
 		String path = String.format(hotlistDocPath, "310", "Month", "1");
-		Document doc = XmlParser.getDocument("hotlists/" + path);
+		Document doc = DataHelper.getDocument("output/hotlists/" + path);
 		Assert.assertEquals(doc.getRootElement().getChildren().size() == HotlistGenerator.TOP_NUMBER_OF_PRODUCTS, true, "This result list should have " + HotlistGenerator.TOP_NUMBER_OF_PRODUCTS + " elements");
 
 		System.out.println("testHotlistResults test ok");

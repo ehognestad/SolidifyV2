@@ -19,6 +19,11 @@ import no.komplett.solidify.data.Product;
 import no.komplett.solidify.data.ProductSaleResult;
 import no.komplett.solidify.data.SalesData;
 import no.komplett.solidify.data.Stores;
+import no.komplett.solidify.service.DataHelper;
+import no.komplett.solidify.service.ProductService;
+import no.komplett.solidify.service.ProductServiceImplementation;
+import no.komplett.solidify.service.SalesService;
+import no.komplett.solidify.service.SalesServiceImplementation;
 import no.komplett.solidify.util.ItemSalesStatus;
 
 import org.jdom.Attribute;
@@ -27,6 +32,11 @@ import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 
+/**
+ * 
+ * @author eivind
+ *
+ */
 public class HotlistGenerator {
 
 	public static final int TOP_NUMBER_OF_PRODUCTS = 5;
@@ -36,12 +46,7 @@ public class HotlistGenerator {
 	private static String hotListFileName = "%s_Hotlist_%s_Category_%s.xml";
 
 	public static void main(String[] args) throws ParseException{
-		Calendar calendar = Calendar.getInstance();
-		calendar.set(Calendar.YEAR, 2011);
-		calendar.set(Calendar.MONTH, 8);
-		calendar.set(Calendar.DAY_OF_MONTH, 16);
-		
-		generateHotLists(calendar.getTime(), "data/testdata/");
+		generateHotLists(new Date(), "data/testdata/");
 	}
 
 	private static void generateHotLists(Date date, String dataDirectory) throws ParseException {
@@ -149,26 +154,18 @@ public class HotlistGenerator {
 			List<ProductSaleResult> weeklyResult = new ArrayList<ProductSaleResult>(getTopSellingProductsList(category, salesCurrentWeek, products));
 			print("Weekly result size: " + weeklyResult.size());
 
-			//			printProductSalesResults(weeklyResult);
-
 			List<ProductSaleResult> monthlyResult = new ArrayList<ProductSaleResult>(getTopSellingProductsList(category, salesCurrentMonth, products));
 			print("Monthly result size: " + monthlyResult.size());
 
-			//			printProductSalesResults(monthlyResult);
-
 			generateHotlist(weeklyResult, category, "Week", store.StoreId);
-
 			generateHotlist(monthlyResult, category, "Month", store.StoreId);
 		}
 	}
 
-	private static void printProductSalesResults(
-			List<ProductSaleResult> weeklyResult) {
+	private static void printProductSalesResults(List<ProductSaleResult> weeklyResult) {
 		for (Iterator<ProductSaleResult> iterator = weeklyResult.iterator(); iterator.hasNext();) {
-			ProductSaleResult productSaleResult = (ProductSaleResult) iterator
-					.next();
+			ProductSaleResult productSaleResult = (ProductSaleResult) iterator.next();
 			print("saleresult: " + productSaleResult.getProduct().getId() + ", no of sales: " + productSaleResult.getNumberOfSales());
-
 		}
 	}
 	
