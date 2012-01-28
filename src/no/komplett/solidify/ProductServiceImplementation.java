@@ -12,6 +12,7 @@ import no.komplett.solidify.specification.IsDemoProductSpecification;
 import no.komplett.solidify.specification.NotInStockSpecification;
 import no.komplett.solidify.specification.ProductEndOfLifeSpecification;
 import no.komplett.solidify.specification.ProductFromCompanySpecification;
+import no.komplett.solidify.specification.ProductFromStoreSpecification;
 import no.komplett.solidify.specification.ProductsExpiringSpecification;
 import no.komplett.solidify.specification.Specification;
 
@@ -29,7 +30,7 @@ public class ProductServiceImplementation implements ProductService{
 	}
 	
 	public Collection<Integer> getProductsNotInStockAndNotInStockWithinTimeFrame(Date notInStockBeforeDate) {
-		System.out.println("notInStockBeforeDate: " + notInStockBeforeDate);
+		//System.out.println("notInStockBeforeDate: " + notInStockBeforeDate);
 		
 		final Specification outOfStockSpecification = new NotInStockSpecification(1);
 		final Specification notInStockWithinNextWeek = new ProductsExpiringSpecification(notInStockBeforeDate);
@@ -41,10 +42,17 @@ public class ProductServiceImplementation implements ProductService{
 	public Collection<Integer> getProductsToRemove() {
 		final Specification demoProductsSpecification = new IsDemoProductSpecification(getDemoProductTypeIds());
 		final Specification companySpecification = new ProductFromCompanySpecification(getCompanyMinimumPriceMap());
-		final Specification productEndOfLifeSpecification = new ProductEndOfLifeSpecification("03");
+		final Specification productEndOfLifeSpecification = new ProductEndOfLifeSpecification();
 		final Specification productsToRemoveSpecification = demoProductsSpecification.or(companySpecification).or(productEndOfLifeSpecification);
 		
 		return filterProducts(productsToRemoveSpecification);
+	}
+	
+	@Override
+	public Collection<Product> getProductsForStoreId(int storeId){
+		final Specification productFromStoreSpecification = new ProductFromStoreSpecification(storeId);
+		
+		return applySpecification(productFromStoreSpecification);
 	}
 	
 	private Set<Integer> getDemoProductTypeIds(){
@@ -75,5 +83,16 @@ public class ProductServiceImplementation implements ProductService{
 		}
 		
 		return productIds;
+	}
+	
+	private Collection<Product> applySpecification(final Specification specification) {
+		Collection<Product> productsToKeep = new HashSet<Product>();
+		for(Product product : products){
+			if(specification.isSatisfiedBy(product)){
+				productsToKeep.add(product);
+			}
+		}
+		
+		return productsToKeep;
 	}
 }

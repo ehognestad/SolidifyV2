@@ -7,12 +7,11 @@ package no.komplett.solidify.data;
  *
  */
 public class Category {
+	private int id;
 	
 	private int storeId;
 	
 	private int catalogId;
-	
-	private int browseNodeId;
 	
 	private int productCount;
 	
@@ -26,16 +25,23 @@ public class Category {
 		super();
 	}
 
-	public Category(int storeId, int catalogId, int browseNodeId,
-			int productCount, String type, String url, String browseNodeText) {
+	public Category(int id, int storeId, int catalogId, int productCount, String type, String url, String browseNodeText) {
 		super();
 		this.storeId = storeId;
 		this.catalogId = catalogId;
-		this.browseNodeId = browseNodeId;
+		this.id = id;
 		this.productCount = productCount;
 		this.type = type;
 		this.url = url;
 		this.browseNodeText = browseNodeText;
+	}
+	
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
 	}
 
 	public int getStoreId() {
@@ -52,14 +58,6 @@ public class Category {
 
 	public void setCatalogId(int catalogId) {
 		this.catalogId = catalogId;
-	}
-
-	public int getBrowseNodeId() {
-		return browseNodeId;
-	}
-
-	public void setBrowseNodeId(int browseNodeId) {
-		this.browseNodeId = browseNodeId;
 	}
 
 	public int getProductCount() {

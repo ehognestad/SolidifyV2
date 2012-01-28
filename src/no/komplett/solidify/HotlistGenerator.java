@@ -2,17 +2,24 @@ package no.komplett.solidify;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import no.komplett.solidify.data.Category;
 import no.komplett.solidify.data.Product;
+import no.komplett.solidify.data.ProductSaleResult;
 import no.komplett.solidify.data.SalesData;
+import no.komplett.solidify.data.Stores;
+import no.komplett.solidify.util.ItemSalesStatus;
 
 import org.jdom.Attribute;
 import org.jdom.DataConversionException;
@@ -22,196 +29,224 @@ import org.jdom.JDOMException;
 
 public class HotlistGenerator {
 
-	private static final String DATA_PATH = "src/no/komplett/solidify/data/";
+	public static final int TOP_NUMBER_OF_PRODUCTS = 5;
+
+	private static DataHelper dataHelper;
 	
-	private static final SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'h:M:s");
-	
-	/**
-	 * Tasks
-	 * 
-	 * 1. Get categories
-	 * 2. Get products
-	 * 3. Get sales data from a given date
-	 * 4. Generate hotlist for all stores
-	 * 
-	 * - Hotlist has different format depending on store and store type
-	 * @throws ParseException 
-	 * 
-	 */
-	
+	private static String hotListFileName = "%s_Hotlist_%s_Category_%s.xml";
+
 	public static void main(String[] args) throws ParseException{
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(Calendar.YEAR, 2011);
+		calendar.set(Calendar.MONTH, 8);
+		calendar.set(Calendar.DAY_OF_MONTH, 16);
+		
+		generateHotLists(calendar.getTime(), "data/testdata/");
+	}
+
+	private static void generateHotLists(Date date, String dataDirectory) throws ParseException {
 		try {
-			List<Category> categories = getCategories();
-			List<Product> products = getProducts();
-			
+			dataHelper = new DataHelper(dataDirectory);
+			List<Category> categories = dataHelper.getCategories();
+			print("Number of categories: " + categories.size());
+
+			//Getting products from store
+			Collection<Product> products = dataHelper.getProducts();
+			print("Number of products: " + products.size());
+
 			ProductService productService = new ProductServiceImplementation(products);
-			Collection<Integer> productsNotInStock = productService.getProductsNotInStock();
-			System.out.println("products not in stock: " + productsNotInStock.size());
-			
-			Collection<Integer> productsNotInStockAndNotInStockWithinNextWeek = productService.getProductsNotInStockAndNotInStockWithinTimeFrame(getNextWeek());
-			System.out.println("products not in stock and not in stock next week: " + productsNotInStockAndNotInStockWithinNextWeek.size());
-			
-			Collection<Integer> productsToRemove = productService.getProductsToRemove();
-			System.out.println("productsToRemove: " + productsToRemove.size());
-			
-			List<SalesData> salesDatas = getSales();
-			System.out.println("sales size: " + salesDatas.size());
-			
-			List<SalesData> salesToRemove = new ArrayList<SalesData>();
-			for (Iterator<SalesData> iterator = salesDatas.iterator(); iterator.hasNext();) {
-				SalesData salesData = iterator.next();
-				
-				//Adding sale to remove if productid is contained in the products to remove list
-				if(productsToRemove.contains(salesData.getSku())) salesToRemove.add(salesData);
-				
+
+			//Gettting all sales for store
+			Collection<SalesData> allSales = dataHelper.getSales();
+			SalesService salesService = new SalesServiceImplementation(allSales);
+			print("Number of sales: " + allSales.size());
+
+			print("==================================================================");
+
+			for(Stores.Store store : Stores.All){
+				Collection<Product> storeProducts = productService.getProductsForStoreId(store.StoreId);
+				Collection<Category> storeCategories = filterCategoriesForStore(store.StoreId, categories);
+
+				Collection<SalesData> storeSales = salesService.getSalesFromSpecificStore(store.StoreId);
+				print("Sales for storeid[" + store.StoreId + "]: " + storeSales.size());
+
+				calculateTopThreeSellersPerCategoryPerMonthAndPerWeek(date, store, storeProducts, storeSales, storeCategories);
+
+				print("==================================================================");
 			}
-			
-			salesDatas.removeAll(salesToRemove);
-			
-			System.out.println("edited sales size: " + salesDatas.size());
-		} catch (JDOMException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (Exception e) {
+			print("*********************");
+			print("Exception generating hotlists: " + e.getMessage());
+			print("*********************");
 		}
 	}
 
-	private static Date getNextWeek(){
-		Calendar calendar = Calendar.getInstance();
-		calendar.add(Calendar.YEAR, -2);
-		calendar.add(Calendar.DAY_OF_MONTH, 7);
+	private static Collection<Category> filterCategoriesForStore(int storeId, Collection<Category> categories){
+		Collection<Category> storeCategories = new HashSet<Category>();
+		for (Iterator<Category> iterator = categories.iterator(); iterator.hasNext();) {
+			Category category = iterator.next();
+
+			if(category.getStoreId() == storeId){
+				storeCategories.add(category);
+			}
+		}
+
+		return storeCategories;
+	}
+
+	private static void calculateTopThreeSellersPerCategoryPerMonthAndPerWeek(Date date, Stores.Store store, Collection<Product> products, Collection<SalesData> storeSales, Collection<Category> categories) throws DataConversionException, JDOMException, IOException, ParseException{
+		ProductService productService = new ProductServiceImplementation(products);
+
+		//Getting products not in stock
+		Collection<Integer> productsNotInStock = productService.getProductsNotInStock();
+		print("products not in stock: " + productsNotInStock.size());
+
+		//getting products not in stock and not in stock within week
+		Collection<Integer> productsNotInStockAndNotInStockWithinNextWeek = productService.getProductsNotInStockAndNotInStockWithinTimeFrame(getNextWeek(date));
+		print("products not in stock and not in stock next week: " + productsNotInStockAndNotInStockWithinNextWeek.size());
+
+		//Getting specific products to remove, demo products, company specific products, and endoflife products
+		Collection<Integer> productsToRemove = productService.getProductsToRemove();
+		print("Number of products to remove: " + productsToRemove.size());
+
+		//processing sales
+		SalesService salesService = new SalesServiceImplementation(storeSales);
+		Collection<SalesData> salesToRemove = salesService.getSalesToRemove(productsToRemove);
+		print("Number of sales to remove: " + salesToRemove.size());
 		
+		//Getting cancelled orders
+		salesToRemove.addAll(salesService.getSalesWithSpecificStatus(ItemSalesStatus.CANCELLED));
+
+		storeSales.removeAll(salesToRemove);
+		print("edited sales size: " + storeSales.size());
+
+		//Removing specific customergroups
+		Set<Integer> customerGroupsToIgnore = new HashSet<Integer>();
+		customerGroupsToIgnore.add(10);
+		salesToRemove = salesService.getSalesFromSpecificCustomerGroups(customerGroupsToIgnore);
+		storeSales.removeAll(salesToRemove);
+		print("Number of sales size after removing certain customergroups: " + storeSales.size());
+
+		//Removing specific store types
+		customerGroupsToIgnore = new HashSet<Integer>();
+		customerGroupsToIgnore.add(20);
+		customerGroupsToIgnore.add(30);
+		salesToRemove = salesService.getSalesFromSpecificStoreTypesAndCustomerGroups(getStoreTypesToExclude(), customerGroupsToIgnore);
+		storeSales.removeAll(salesToRemove);
+		print("Number of sales size after removing certain store types: " + storeSales.size());
+
+		//Getting sales from current week
+		Collection<SalesData> salesCurrentWeek = salesService.getSalesFromCurrentWeek(date);
+		print("Number of sales from current week: " + salesCurrentWeek.size());
+
+		//Getting sales from current month
+		Collection<SalesData> salesCurrentMonth = salesService.getSalesFromCurrentMonth(date);
+		print("Number of sales from current month: " + salesCurrentMonth.size());
+
+		for (Iterator<Category>iterator = categories.iterator(); iterator.hasNext();) {
+			Category category = (Category) iterator.next();
+
+			List<ProductSaleResult> weeklyResult = new ArrayList<ProductSaleResult>(getTopSellingProductsList(category, salesCurrentWeek, products));
+			print("Weekly result size: " + weeklyResult.size());
+
+			//			printProductSalesResults(weeklyResult);
+
+			List<ProductSaleResult> monthlyResult = new ArrayList<ProductSaleResult>(getTopSellingProductsList(category, salesCurrentMonth, products));
+			print("Monthly result size: " + monthlyResult.size());
+
+			//			printProductSalesResults(monthlyResult);
+
+			generateHotlist(weeklyResult, category, "Week", store.StoreId);
+
+			generateHotlist(monthlyResult, category, "Month", store.StoreId);
+		}
+	}
+
+	private static void printProductSalesResults(
+			List<ProductSaleResult> weeklyResult) {
+		for (Iterator<ProductSaleResult> iterator = weeklyResult.iterator(); iterator.hasNext();) {
+			ProductSaleResult productSaleResult = (ProductSaleResult) iterator
+					.next();
+			print("saleresult: " + productSaleResult.getProduct().getId() + ", no of sales: " + productSaleResult.getNumberOfSales());
+
+		}
+	}
+	
+	private static Date getNextWeek(Date date){
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		calendar.add(Calendar.DAY_OF_MONTH, 7);
+
 		return calendar.getTime();
 	}
-	
-	private static List<SalesData> getSales() throws JDOMException, IOException,
-			DataConversionException {
-		Document salesDataDoc = XmlParser.getDocument(DATA_PATH + "SalesData.xml");
-		List<Element> rowElement = salesDataDoc.getRootElement().getChildren();
-		
-		List<SalesData> salesDatas = new ArrayList<SalesData>();
-		for (Iterator iterator = rowElement.iterator(); iterator.hasNext();) {
-			Element element = (Element) iterator.next();
-			
-			List<Attribute> attributes = element.getAttributes();
-			SalesData salesData = new SalesData();
-			
-			salesData.setStoreId(element.getAttribute("StoreID").getIntValue());
-			salesData.setCustomerGroupId(element.getAttribute("KDGRP").getIntValue());
-			salesData.setSku(element.getAttribute("SKU").getIntValue());
-			salesData.setDay(element.getAttribute("Day").getIntValue());
-			salesData.setMonth(element.getAttribute("Month").getIntValue());
-			salesData.setYear(element.getAttribute("Year").getIntValue());
-			salesData.setCount(element.getAttribute("Count").getIntValue());
-			salesData.setItemStatus(element.getAttributeValue("ItemStatus"));
-			
-			salesDatas.add(salesData);
+
+	private static Document generateHotlist(Collection<ProductSaleResult> products, Category category, String mode, Integer storeId) throws IOException{
+		Element rootElement = new Element("Hotlist");
+		Document doc = new Document(rootElement);
+
+		rootElement.setAttribute(new Attribute("store", storeId.toString()));
+		rootElement.setAttribute("category", String.valueOf(category.getId()));
+		rootElement.setAttribute(new Attribute("type", mode));
+
+		for(ProductSaleResult saleResult : products){
+			Element itemElement = new Element("item");
+			rootElement.addContent(itemElement);
+
+			itemElement.setAttribute(new Attribute("ProductId", String.valueOf(saleResult.getProduct().getId())));
+			itemElement.setAttribute("Product", saleResult.getProduct().getDescription());
+			itemElement.setAttribute("TotalSales", String.valueOf(saleResult.getNumberOfSales()));
 		}
-		
-		return salesDatas;
+
+		dataHelper.writeXmlToFile(doc, String.format(hotListFileName, storeId, mode, category.getId()));
+
+		return doc;
 	}
 
-	private static List<Product> getProducts() throws JDOMException, IOException,
-			DataConversionException, ParseException {
-		Document productsDoc = XmlParser.getDocument(DATA_PATH + "Products.xml");
-		List<Element> rowList = productsDoc.getRootElement().getChildren();
-		
-		List<Product> products = new ArrayList<Product>();
-		for (Iterator iterator = rowList.iterator(); iterator.hasNext();) {
-			Element rowElement = (Element) iterator.next();
-			
-			List<Attribute> attributes = rowElement.getAttributes();
-			Product product = new Product();
-			for (Iterator iterator2 = attributes.iterator(); iterator2
-					.hasNext();) {
-				Attribute attribute = (Attribute) iterator2.next();
-				
-				if(attribute.getName().equalsIgnoreCase("MATNR")){
-					product.setId(attribute.getIntValue());
-				} else if (attribute.getName().equalsIgnoreCase("MAKTX1")){
-					product.setDescription(attribute.getValue());
-				} else if(attribute.getName().equalsIgnoreCase("MAKTX2")){
-					product.setDescription2(attribute.getValue());
-				} else if(attribute.getName().equalsIgnoreCase("storeid")){
-					product.setStoreId(attribute.getIntValue());
-				} else if(attribute.getName().equalsIgnoreCase("browsenodeid")){
-					product.setBrowseNodeId(attribute.getIntValue());
-				} else if(attribute.getName().equalsIgnoreCase("AvailableDate1")){
-					product.setAvailableDate(dateParser.parse(attribute.getValue()));
-				} else if(attribute.getName().equalsIgnoreCase("ZCPRICE")){
-					product.setPrice(attribute.getDoubleValue());
-				} else if(attribute.getName().equalsIgnoreCase("ZCPRICE_GROSS")){
-					product.setPriceGross(attribute.getDoubleValue());
-				} else if(attribute.getName().equalsIgnoreCase("ZCPRICE_VAT")){
-					product.setPriceVAT(attribute.getDoubleValue());
-				} else if(attribute.getName().equalsIgnoreCase("QuantityForSale")){
-					product.setQuantityForSale(attribute.getDoubleValue());
-				} else if(attribute.getName().equalsIgnoreCase("QuantityForSale1")){
-					product.setQuantityForSale1(attribute.getDoubleValue());
-				} else if(attribute.getName().equalsIgnoreCase("DISMM")){
-					product.setDismm(attribute.getValue());
-				} else if(attribute.getName().equalsIgnoreCase("BISMT")){
-					product.setBismt(attribute.getValue());
-				} else if(attribute.getName().equalsIgnoreCase("MFRPN")){
-					product.setMfrpn(attribute.getValue());
-				} else if(attribute.getName().equalsIgnoreCase("MFRNR")){
-					product.setMfrnr(attribute.getValue());
-				} else if(attribute.getName().equalsIgnoreCase("VMSTA")){
-					product.setVmsta(attribute.getValue());
-				} else if(attribute.getName().equalsIgnoreCase("SPART")){
-					product.setSpart(attribute.getIntValue());
-				} else if(attribute.getName().equalsIgnoreCase("VTWEG")){
-					product.setVtveg(attribute.getIntValue());
-				} else if(attribute.getName().equalsIgnoreCase("WAERS")){
-					product.setCurrency(attribute.getValue());
-				} else if(attribute.getName().equalsIgnoreCase("WERKS")){
-					product.setWerks(attribute.getIntValue());
-				}
+	private static Collection<ProductSaleResult> getTopSellingProductsList(Category category, Collection<SalesData> sales, Collection<Product> products){
+		Map<Integer, Product> productMap = new HashMap<Integer, Product>();
+		for(Product product : products){
+			if(product.getCategoryId() == category.getId()){
+				productMap.put(new Integer(product.getId()), product);
 			}
-			
-			products.add(product);
 		}
-		
-		return products;
+
+		Map<Integer, ProductSaleResult> resultMap = getSalesResults(sales, productMap);
+
+		List<ProductSaleResult> saleResults = new ArrayList<ProductSaleResult>(resultMap.values());
+		Collections.sort(saleResults);
+
+		if(saleResults.size() > 0){
+			saleResults = saleResults.subList(0, saleResults.size() >= TOP_NUMBER_OF_PRODUCTS ? TOP_NUMBER_OF_PRODUCTS : saleResults.size());
+		}
+
+		return saleResults;
 	}
 
-	private static List<Category> getCategories() throws JDOMException, IOException,
-			DataConversionException {
-		Document categoriesDoc = XmlParser.getDocument(DATA_PATH + "Categories.xml");
-		List<Element> rowList = categoriesDoc.getRootElement().getChildren();
-		
-		List<Category> categories = new ArrayList<Category>();
-		for (Iterator iterator = rowList.iterator(); iterator.hasNext();) {
-			Element rowElement = (Element) iterator.next();
-			
-			List<Attribute> attributes = rowElement.getAttributes();
-			
-			Category category = new Category();
-			for (Iterator iterator2 = attributes.iterator(); iterator2
-					.hasNext();) {
-				Attribute attribute = (Attribute) iterator2.next();
-				
-				if(attribute.getName().equalsIgnoreCase("storeid")){
-					category.setStoreId(attribute.getIntValue());
-				} else if(attribute.getName().equalsIgnoreCase("catalogid")){
-					category.setCatalogId(attribute.getIntValue());
-				} else if(attribute.getName().equalsIgnoreCase("browsenodeid")){
-					category.setBrowseNodeId(attribute.getIntValue());
-				} else if(attribute.getName().equalsIgnoreCase("CountOfProducts")){
-					category.setProductCount(attribute.getIntValue());
-				} else if(attribute.getName().equalsIgnoreCase("bn")){
-					category.setType(attribute.getValue());
-				} else if(attribute.getName().equalsIgnoreCase("url")){
-					category.setUrl(attribute.getValue());
+	private static Map<Integer, ProductSaleResult> getSalesResults(Collection<SalesData> sales, Map<Integer, Product> productMap) {
+		//Counting number of sales per product
+		Map<Integer, ProductSaleResult> resultMap = new HashMap<Integer, ProductSaleResult>();
+		for(SalesData sale : sales){
+			if(resultMap.get(sale.getProductId()) != null){
+				ProductSaleResult saleResult = resultMap.get(sale.getProductId());
+				saleResult.setNumberOfSales(saleResult.getNumberOfSales() + sale.getCount());
+			} else{
+				if(productMap.get(sale.getProductId()) != null){
+					ProductSaleResult saleResult = new ProductSaleResult(productMap.get(sale.getProductId()), sale.getCount());
+					resultMap.put(sale.getProductId(), saleResult);
 				}
 			}
-			
-			categories.add(category);
 		}
-		
-		System.out.println("Categories size: " + categories.size());
-		return categories;
+		return resultMap;
+	}
+
+	private static Set<String> getStoreTypesToExclude(){
+		Set<String> set = new HashSet<String>();
+		set.add("B2C");
+
+		return set;
+	}
+
+	private static void print(String stringToPring){
+		System.out.println(stringToPring);
 	}
 }

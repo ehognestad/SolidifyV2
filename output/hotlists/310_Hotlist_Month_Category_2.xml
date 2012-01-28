@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Hotlist store="310" category="2" type="Month">
+  <item ProductId="81" Product="Product 81 - Out of stock coming in" TotalSales="20" />
+  <item ProductId="82" Product="Product 82 - Out of stock not coming in" TotalSales="10" />
+  <item ProductId="10" Product="Product 10" TotalSales="5" />
+  <item ProductId="9" Product="Product 9" TotalSales="4" />
+  <item ProductId="8" Product="Product 8" TotalSales="3" />
+</Hotlist>
+

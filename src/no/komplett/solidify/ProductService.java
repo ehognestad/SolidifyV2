@@ -12,4 +12,6 @@ public interface ProductService {
 	Collection<Integer> getProductsNotInStockAndNotInStockWithinTimeFrame(Date notInStockBeforeDate);
 	
 	Collection<Integer> getProductsToRemove();
+
+	Collection<Product> getProductsForStoreId(int storeId);
 }

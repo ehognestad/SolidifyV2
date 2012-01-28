@@ -18,7 +18,7 @@ public class NotInStockSpecification extends AbstractSpecification {
 			
 			if(product.getQuantityForSale() < quantityForSale){
 				counter++;
-				System.out.println("Product with quantity for sale=[" + product.getQuantityForSale() + "] [" + counter + "]");
+				//System.out.println("Product with quantity for sale=[" + product.getQuantityForSale() + "] [" + counter + "]");
 			}
 			
 			return product.getQuantityForSale() < quantityForSale;

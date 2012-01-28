@@ -19,7 +19,7 @@ public class ProductsExpiringSpecification extends AbstractSpecification {
 			Product product = (Product) o;
 			if(product.getExpiresDate() != null && product.getExpiresDate().before(expiresDate)){
 				counter++;
-				System.out.println("Product with expiry date=[" + product.getExpiresDate() + "] [" + counter + "]");
+				//System.out.println("Product with expiry date=[" + product.getExpiresDate() + "] [" + counter + "]");
 			}
 			
 			return product.getExpiresDate() != null && product.getExpiresDate().after(expiresDate);

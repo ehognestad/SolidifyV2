@@ -20,7 +20,7 @@ public class IsDemoProductSpecification extends AbstractSpecification {
 			
 			if(demoProductTypeIds.contains(product.getSpart())){
 				counter++;
-				System.out.println("Demo product with spart=[" + product.getSpart() + "] [" + counter + "]");
+//				System.out.println("Demo product with spart=[" + product.getSpart() + "] [" + counter + "]");
 			}
 			
 			return demoProductTypeIds.contains(product.getSpart());
