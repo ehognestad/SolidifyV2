@@ -1,0 +1,30 @@
+
+========== Products ==============
+1. Make logic for getting products out of stock (QuantityForSale < 1)
+2. Get products out of stock and not in stock within the next 7 days (QuantityForSale < 1 && QuantityForSale1 > 0 && AvailableDate1 <= (now + 7 days))
+3. Get products not to be counted:
+- demo products (SPART in(90, 91, 92))
+- itegra products less than 1000kr (storeid=325)
+- norek.se or norek.se products less than 500 kr
+- end of life products (VMSTA="03")
+                                                             
+
+============ Sales ==============
+1. remove cancelled sales lines:
+itemstatus=CD
+
+2. remove specific customer groups
+where attribute KDGRP in (10, 20, 30) OR storetype="B2C" OR 
+
+3. Remove products from sales not to be counted(demo, specific stores, endoflife)
+
+===== Specific for Monthly hotlist ======
+1. Remove products out of stock and not coming in
+2. Remove sales not from this year
+3. Remove sales not from this month
+
+===== Specfic for Weekly hotlist =====
+1. Remove products out of stock
+2. Remove sales not from current week
+
+             

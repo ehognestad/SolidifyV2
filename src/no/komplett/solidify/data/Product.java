@@ -21,7 +21,7 @@ public class Product {
 	
 	private int storeId;
 	
-	private int browseNodeId;
+	private int categoryId;
 	
 	private Date availableDate;
 	
@@ -57,7 +57,7 @@ public class Product {
 	}
 
 	public Product(int id, String description, String description2,
-			int storeId, int browseNodeId, Date availableDate, double price,
+			int storeId, int categoryId, Date availableDate, double price,
 			double priceGross, double priceVAT, double quantityForSale,
 			double quantityForSale1, String dismm, String bismt, String mfrpn,
 			String mfrnr, String vmsta, int spart, int vtveg,
@@ -67,7 +67,7 @@ public class Product {
 		this.description = description;
 		this.description2 = description2;
 		this.storeId = storeId;
-		this.browseNodeId = browseNodeId;
+		this.categoryId = categoryId;
 		this.availableDate = availableDate;
 		this.price = price;
 		this.priceGross = priceGross;
@@ -117,15 +117,15 @@ public class Product {
 		this.storeId = storeId;
 	}
 
-	public int getBrowseNodeId() {
-		return browseNodeId;
+	public int getCategoryId() {
+		return categoryId;
 	}
 
-	public void setBrowseNodeId(int browseNodeId) {
-		this.browseNodeId = browseNodeId;
+	public void setCategoryId(int categoryId) {
+		this.categoryId = categoryId;
 	}
 
-	public Date getAvailableDate() {
+	public Date getExpiresDate() {
 		return availableDate;
 	}
 

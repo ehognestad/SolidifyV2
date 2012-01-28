@@ -12,7 +12,7 @@ public class SalesData {
 	
 	private int customerGroupId;
 	
-	private int sku;
+	private int productId;
 	
 	private int day;
 	
@@ -28,12 +28,12 @@ public class SalesData {
 		super();
 	}
 
-	public SalesData(int storeId, int customerGroupId, int sku, int day,
+	public SalesData(int storeId, int customerGroupId, int productId, int day,
 			int month, int year, int count, String itemStatus) {
 		super();
 		this.storeId = storeId;
 		this.customerGroupId = customerGroupId;
-		this.sku = sku;
+		this.productId = productId;
 		this.day = day;
 		this.month = month;
 		this.year = year;
@@ -57,12 +57,12 @@ public class SalesData {
 		this.customerGroupId = customerGroupId;
 	}
 
-	public int getSku() {
-		return sku;
+	public int getProductId() {
+		return productId;
 	}
 
-	public void setSku(int sku) {
-		this.sku = sku;
+	public void setProductId(int sku) {
+		this.productId = sku;
 	}
 
 	public int getDay() {
