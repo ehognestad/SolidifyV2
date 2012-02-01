@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.testng.Assert;
+import org.testng.annotations.Test;
 
 import no.komplett.solidify.data.SalesData;
 import no.komplett.solidify.specification.SaleStatusSpecification;
@@ -21,7 +22,8 @@ public class SpecificationTests {
 		tests.testInvalidSaleInCustomerGroupSpecification(-99);
 	}
 
-	private void testCancelledSaleSpecification(String cancelledCode){
+	@Test
+	public void testCancelledSaleSpecification(String cancelledCode){
 		System.out.println("testing cancelled sale specification");
 		final Specification cancelledSaleSpecification = new SaleStatusSpecification(ItemSalesStatus.CANCELLED);
 

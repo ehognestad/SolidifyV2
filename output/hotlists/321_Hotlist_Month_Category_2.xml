@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Hotlist store="321" category="2" type="Month">
-  <item ProductId="50" Product="Product 50" TotalSales="5" />
-  <item ProductId="49" Product="Product 49" TotalSales="4" />
-  <item ProductId="48" Product="Product 48" TotalSales="3" />
-  <item ProductId="47" Product="Product 47" TotalSales="2" />
-  <item ProductId="46" Product="Product 46" TotalSales="1" />
-</Hotlist>
-
