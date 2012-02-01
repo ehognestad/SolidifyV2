@@ -44,27 +44,39 @@ public class HotlistGenerator {
 	private static DataHelper dataHelper;
 	
 	private static String hotListFileName = "%s_Hotlist_%s_Category_%s.xml";
+	
+	private ProductService productService;
+	
+	private SalesService salesService;
 
-	public static void main(String[] args) throws ParseException{
-		generateHotLists(new Date(), "data/testdata/");
+	public static void main(String[] args) throws ParseException, DataConversionException, JDOMException, IOException{
+		
+		dataHelper = new DataHelper("data/testdata/");
+		
+		//Getting products from store
+		Collection<Product> products = dataHelper.getProducts();
+		print("Number of products: " + products.size());
+		
+		//Gettting all sales for store
+		Collection<SalesData> allSales = dataHelper.getSales();
+		SalesService salesService = new SalesServiceImplementation(allSales);
+		print("Number of sales: " + allSales.size());
+		
+		ProductService productService = new ProductServiceImplementation(products);
+		HotlistGenerator generator = new HotlistGenerator(productService, salesService);
+		generator.generateHotLists(new Date());
+	}
+	
+	public HotlistGenerator(ProductService productService, SalesService salesService){
+		this.productService = productService;
+		this.salesService = salesService;
+		
 	}
 
-	private static void generateHotLists(Date date, String dataDirectory) throws ParseException {
+	private void generateHotLists(Date date) throws ParseException {
 		try {
-			dataHelper = new DataHelper(dataDirectory);
 			List<Category> categories = dataHelper.getCategories();
 			print("Number of categories: " + categories.size());
-
-			//Getting products from store
-			Collection<Product> products = dataHelper.getProducts();
-			print("Number of products: " + products.size());
-
-			ProductService productService = new ProductServiceImplementation(products);
-
-			//Gettting all sales for store
-			Collection<SalesData> allSales = dataHelper.getSales();
-			SalesService salesService = new SalesServiceImplementation(allSales);
-			print("Number of sales: " + allSales.size());
 
 			print("==================================================================");
 
@@ -99,9 +111,7 @@ public class HotlistGenerator {
 		return storeCategories;
 	}
 
-	private static void calculateTopThreeSellersPerCategoryPerMonthAndPerWeek(Date date, Stores.Store store, Collection<Product> products, Collection<SalesData> storeSales, Collection<Category> categories) throws DataConversionException, JDOMException, IOException, ParseException{
-		ProductService productService = new ProductServiceImplementation(products);
-
+	private void calculateTopThreeSellersPerCategoryPerMonthAndPerWeek(Date date, Stores.Store store, Collection<Product> products, Collection<SalesData> storeSales, Collection<Category> categories) throws DataConversionException, JDOMException, IOException, ParseException{
 		//Getting products not in stock
 		Collection<Integer> productsNotInStock = productService.getProductsNotInStock();
 		print("products not in stock: " + productsNotInStock.size());
@@ -115,7 +125,6 @@ public class HotlistGenerator {
 		print("Number of products to remove: " + productsToRemove.size());
 
 		//processing sales
-		SalesService salesService = new SalesServiceImplementation(storeSales);
 		Collection<SalesData> salesToRemove = salesService.getSalesToRemove(productsToRemove);
 		print("Number of sales to remove: " + salesToRemove.size());
 		
@@ -148,9 +157,7 @@ public class HotlistGenerator {
 		Collection<SalesData> salesCurrentMonth = salesService.getSalesFromCurrentMonth(date);
 		print("Number of sales from current month: " + salesCurrentMonth.size());
 
-		for (Iterator<Category>iterator = categories.iterator(); iterator.hasNext();) {
-			Category category = (Category) iterator.next();
-
+		for (Category category : categories) {
 			List<ProductSaleResult> weeklyResult = new ArrayList<ProductSaleResult>(getTopSellingProductsList(category, salesCurrentWeek, products));
 			print("Weekly result size: " + weeklyResult.size());
 
